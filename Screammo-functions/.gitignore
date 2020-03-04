@@ -64,3 +64,4 @@ node_modules/
 # dotenv environment variables file
 .env
 screammo-148ea-b2d72f9fa2cc.json
+config.js
