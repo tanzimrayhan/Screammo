@@ -1,12 +1,13 @@
-const {db} =require('../util/admin');
-const firebase=require('firebase');
+const { db } = require('../util/admin');
+const firebase = require('firebase');
 
 
-const {firebaseConfig}=require('../config');
+const { firebaseConfig } = require('../config');
 firebase.initializeApp(firebaseConfig);
 
+const { validateSignUpData, validateLoginData } = require('../util/validators');
 
-exports.signup=((req, res) => {
+exports.signup = ((req, res) => {
     const newUser = {
         email: req.body.email,
         password: req.body.password,
@@ -14,9 +15,11 @@ exports.signup=((req, res) => {
         handle: req.body.handle
     };
 
-   
 
- 
+    const {valid,errors}= validateSignUpData(newUser);
+
+    if(!valid) return res.status(400).json(errors);
+
     //End of Validation
 
     let token, userId;
@@ -56,22 +59,19 @@ exports.signup=((req, res) => {
 
 })
 
-exports.login=(req, res) => {
+exports.login = (req, res) => {
     const user = {
         email: req.body.email,
         password: req.body.password
     };
 
+    const {valid,errors}= validateLoginData(user);
+
+    if(!valid) return res.status(400).json(errors);
+
+
     //Validation
-    let errors = {};
-
-    if (isEmpty(user.email)) errors.email = "Must not be empty";
-    if (isEmpty(user.password)) errors.password = "Must not be empty";
-
-    if (Object.keys(errors).length > 0) {
-        return res.status(400).json(errors);
-    }
-
+    
     firebase.auth().signInWithEmailAndPassword(user.email, user.password)
         .then(data => {
             return data.user.getIdToken();
