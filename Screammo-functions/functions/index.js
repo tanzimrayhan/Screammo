@@ -7,6 +7,7 @@ const {
   getAllScreams,
   postOneScream,
   getScream,
+  commentOnScream
 } = require("./handlers/screams");
 const {
   signup,
@@ -28,6 +29,7 @@ app.get("/scream/:screamId", getScream);
 //TODO like a scream
 //TODO unlike a scream
 //TODO comment a  scream
+app.post('/scream/:screamId/comment',FBAuth,commentOnScream) 
 
 // Users routes
 app.post("/signup", signup);
