@@ -1,10 +1,16 @@
 {
+  "projects": {
+    "default": "screammo-148ea"
+  },
   "emulators": {
     "functions": {
       "port": 5001
     },
     "ui": {
       "enabled": true
+    },
+    "firestore": {
+      "port": 8080
     }
   }
 }

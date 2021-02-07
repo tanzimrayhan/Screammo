@@ -1,7 +1,7 @@
 const { db, admin } = require("../util/admin");
 const firebase = require("firebase");
 
-const { firebaseConfig } = require("../config");
+const { firebaseConfig } = require("../util/config");
 firebase.initializeApp(firebaseConfig);
 
 //Bringing in all the validators
@@ -10,6 +10,7 @@ const {
   validateLoginData,
   reduceUserDetails,
 } = require("../util/validators");
+const { user } = require("firebase-functions/lib/providers/auth");
 
 //Sign Up a user to the app
 exports.signup = (req, res) => {
@@ -40,7 +41,9 @@ exports.signup = (req, res) => {
       }
     })
     .then((data) => {
+      data.user.sendEmailVerification();
       userId = data.user.uid;
+
       return data.user.getIdToken();
     })
     .then((idtoken) => {
@@ -52,7 +55,8 @@ exports.signup = (req, res) => {
         imageUrl: `https://firebasestorage.googleapis.com/v0/b/${firebaseConfig.storageBucket}/o/${noImg}?alt=media`,
         userId,
       };
-      return db.doc(`/users/${newUser.handle}`).set(userCredentials);
+      let dbEntry = db.doc(`/users/${newUser.handle}`).set(userCredentials);
+      return dbEntry;
     })
     .then(() => {
       return res.status(201).json({ token });
@@ -84,10 +88,16 @@ exports.login = (req, res) => {
     .auth()
     .signInWithEmailAndPassword(user.email, user.password)
     .then((data) => {
-      return data.user.getIdToken();
+      if (data.user.emailVerified) {
+        return data.user.getIdToken();
+      } else {
+        return;
+      }
     })
     .then((token) => {
-      return res.json({ token });
+      if (token) {
+        return res.json({ token });
+      } else return res.status(400).json({ message: "Email not verified!" });
     })
     .catch((err) => {
       console.log(err);
@@ -135,6 +145,26 @@ exports.getAuthenticatedUser = (req, res) => {
         userData.likes.push(entry.data());
       });
 
+      return db
+        .collection("notifications")
+        .where("recipient", "==", req.user.handle)
+        .orderBy("createdAt", "desc")
+        .limit(10)
+        .get();
+    })
+    .then((data) => {
+      userData.notifications = [];
+      data.forEach((doc) => {
+        userData.notifications.push({
+          recipient: doc.data().recipient,
+          sender: doc.data().sender,
+          creaedAt: doc.data().creaedAt,
+          screamId: doc.data().screamId,
+          type: doc.data().type,
+          read: doc.data().read,
+          notificationId: doc.id,
+        });
+      });
       return res.json(userData);
     })
     .catch((err) => {
